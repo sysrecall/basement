@@ -1,23 +1,23 @@
 # CTAIO Labs - Request an Experiment
 
-Vite + React + TypeScript frontend for the public `/request` form.
+Vite + React + TypeScript frontend for the experiment request form.
 **The backend is a stub** - see `src/api/experimentRequests.ts`.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/request
+npm run dev        # http://localhost:5173/
 npm test           # vitest (validation, conditional fields, submit, failure, duplicate-submit)
 npm run build      # typecheck + production build
 ```
 
-Try the error state locally: `/request?stub=fail`.
+Try the error state locally: `/?stub=fail`.
 Submitted records land in `localStorage["ctaio.experimentRequests.stub"]`.
 
 ## Backend design (planned)
 ```mermaid
 flowchart TD
     subgraph INTAKE["1. Intake"]
-        A["Requester fills /request form"] --> B["POST /api/experiment-requests"]
+        A["Requester fills request form"] --> B["POST /api/experiment-requests"]
         B --> C{"Server-side Zod validation"}
         C -- invalid --> A
         C -- valid --> D[("Requests DB<br/>status = new<br/>paidExperiment, needsCostReview")]
@@ -92,7 +92,7 @@ src/api/                backend stub
 
 ## Notes
 
-- Hosting needs an SPA fallback so `/request` serves `index.html`.
+- Hosting needs an SPA fallback so `/` serves `index.html`.
 - "Would you be willing to provide access or sponsor…" stays visible even when the answer to the
   paid question is "No", because the brief lists it as always-optional.
 - The `CTAIO Labs` link in the top bar points to `https://ctaio.dev/en/labs`; adjust if that's not the real path.
