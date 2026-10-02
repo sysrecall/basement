@@ -1,7 +1,7 @@
-# CTAIO Labs — Request an Experiment
+# CTAIO Labs - Request an Experiment
 
 Vite + React + TypeScript frontend for the public `/request` form.
-**The backend is a stub** — see `src/api/experimentRequests.ts`.
+**The backend is a stub** - see `src/api/experimentRequests.ts`.
 
 ```bash
 npm install
@@ -12,6 +12,64 @@ npm run build      # typecheck + production build
 
 Try the error state locally: `/request?stub=fail`.
 Submitted records land in `localStorage["ctaio.experimentRequests.stub"]`.
+
+## Backend design (planned)
+```mermaid
+flowchart TD
+    subgraph INTAKE["1. Intake"]
+        A["Requester fills /request form"] --> B["POST /api/experiment-requests"]
+        B --> C{"Server-side Zod validation"}
+        C -- invalid --> A
+        C -- valid --> D[("Requests DB<br/>status = new<br/>paidExperiment, needsCostReview")]
+        D --> E["Confirmation shown to requester"]
+    end
+
+    subgraph TRIAGE["2. Triage and prioritisation"]
+        D --> F["Scoring job"]
+        F --> G["Factors: paid, estimated cost, existing tools and subscriptions, access or sponsor, human intervention needed, difficulty"]
+        G --> H{"Auto-triage"}
+        H -- "missing or unclear" --> I["status = needs-info<br/>one-time clarification email"]
+        I -- "requester replies" --> F
+        H -- "clearly out of scope or duplicate" --> J["status = rejected"]
+        H -- "viable" --> K["status = reviewing"]
+        K --> L{"Editor review<br/>scope, cost approval"}
+        L -- reject --> J
+        L -- approve --> M[["Priority queue<br/>status = accepted"]]
+    end
+
+    subgraph EXEC["3. Agent execution"]
+        M --> N["Scheduler picks next job"]
+        N --> O{"Required tools and<br/>credentials available?"}
+        O -- no --> P["Blocked: needs budget,<br/>subscription or human setup"]
+        P -- "resolved by us or sponsor" --> M
+        O -- yes --> Q["Provision sandbox<br/>VM or container from base image"]
+        R[("Environment catalog<br/>pre-installed tools, APIs,<br/>secrets vault, spend caps")] --> Q
+        Q --> S["Agent plans experiment from<br/>scenario, metrics and methodology notes"]
+        S --> T["Agent runs the experiment<br/>logs, outputs, raw data saved"]
+        T --> U{"Run succeeded?"}
+        U -- "retry within limits" --> S
+        U -- "failed or needs a human" --> P
+        U -- yes --> V["Extract requested metrics<br/>cost, latency, success rate, etc."]
+    end
+
+    subgraph PUBLISH["4. Report, review and publish"]
+        V --> W["Generate report draft<br/>methodology, results, costs, code"]
+        W --> X{"Human review (us)"}
+        X -- "changes requested" --> S
+        X -- reject --> Y["status = rejected or archived"]
+        X -- approve --> Z["Publish lab article<br/>and/or podcast episode"]
+        Z --> AA["status = completed<br/>notify requester"]
+    end
+
+    subgraph CROSS["Cross-cutting"]
+        AB[("Spend tracker and audit log")]
+        AC[("Artifact storage<br/>logs, datasets, code")]
+    end
+    T -.-> AB
+    Q -.-> AB
+    T -.-> AC
+    W -.-> AC
+```
 
 ## Wiring the backend later
 
