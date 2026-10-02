@@ -63,23 +63,34 @@ describe('email validation', () => {
 })
 
 describe('conditional paid-resource fields', () => {
-  const paidQuestion = /Which paid subscriptions, APIs, credits/
+  const paidQuestionYes = /Which paid subscriptions, APIs, credits/
+  const paidQuestionPossibly = /Which APIs, datasets, hardware, or services would be required/
+  const anyPaidQuestion = /would be required/
 
   it('is hidden until the answer is yes or possibly', async () => {
     const { user } = setup()
-    expect(screen.queryByLabelText(paidQuestion)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(anyPaidQuestion)).not.toBeInTheDocument()
 
     await user.click(screen.getByLabelText(/Yes — definitely/))
-    expect(screen.getByLabelText(paidQuestion)).toBeInTheDocument()
+    expect(screen.getByLabelText(paidQuestionYes)).toBeInTheDocument()
     expect(screen.getByLabelText('Estimated total experiment cost')).toBeInTheDocument()
     expect(screen.getByLabelText('Expected duration of paid access')).toBeInTheDocument()
 
     await user.click(screen.getByLabelText(/Possibly — I'm not sure/))
-    expect(screen.getByLabelText(paidQuestion)).toBeInTheDocument()
+    expect(screen.getByLabelText(paidQuestionPossibly)).toBeInTheDocument()
+    expect(screen.queryByLabelText(paidQuestionYes)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Estimated total experiment cost')).toBeInTheDocument()
 
     await user.click(screen.getByLabelText(/free access should be sufficient/))
-    expect(screen.queryByLabelText(paidQuestion)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(anyPaidQuestion)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Estimated total experiment cost')).not.toBeInTheDocument()
+  })
+
+  it('hides the cost details for "I don\'t know" as well', async () => {
+    const { user } = setup()
+    await user.click(screen.getByLabelText(/Yes — definitely/))
+    await user.click(screen.getByLabelText(/I don't know/))
+    expect(screen.queryByLabelText(anyPaidQuestion)).not.toBeInTheDocument()
   })
 
   it('requires the cost details once they are shown', async () => {
